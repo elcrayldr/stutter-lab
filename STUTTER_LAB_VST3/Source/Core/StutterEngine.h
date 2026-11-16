@@ -169,7 +169,9 @@ inline StereoBuffer renderStutter (const StereoBuffer& sel, const RenderSettings
     const size_t effectTailSamples = (size_t) std::min (6.0 * sel.sampleRate,
         (double) delayTailSamples + (double) reverbTailSamples);
     if (effectTailSamples > 0)
-        out.resize (out.size() + effectTailSamples);
+        const size_t extendedSize = out.size() + effectTailSamples;
+        out.l.resize (extendedSize, 0.0f);
+        out.r.resize (extendedSize, 0.0f);
 
     // Stereo feedback delay with cross-channel regeneration (ping-pong topology).
     if (rs.delayMix > 0.001f)
