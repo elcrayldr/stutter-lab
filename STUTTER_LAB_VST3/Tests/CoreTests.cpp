@@ -100,7 +100,7 @@ static void testToneStability()
     Rng rng (5);
     StereoBuffer noise; noise.sampleRate = 96000; noise.resize (96000 * 4);
     for (size_t i = 0; i < noise.size(); ++i) { noise.l[i] = rng.bipolar(); noise.r[i] = rng.bipolar(); }
-    for (double sr : { 44100.0, 48000.0, 88200.0, 96000.0 })
+    for (double sr : { 44100.0, 48000.0, 88200.0, 96000.0, 192000.0 })
     {
         noise.sampleRate = sr;
         RenderSettings rs; rs.stutter.repeats = 32; rs.stutter.division = 8; rs.phone = true; rs.saturation = 1.0f;
@@ -278,6 +278,7 @@ static void testThreadStress()
     while (std::chrono::steady_clock::now() - t0 < std::chrono::milliseconds (1500))
     {
         cap.requestStart(); std::this_thread::sleep_for (std::chrono::milliseconds (7));
+        std::vector<float> mn (32), mx (32); cap.peaks (0, (size_t) cap.numSamples(), 32, mn.data(), mx.data());
         cap.requestStop();  std::this_thread::sleep_for (std::chrono::milliseconds (3));
         StereoBuffer s; cap.snapshotAll (s);
         auto* b = new PreviewBuffer; b->audio = constant (2000 + (size_t) (n % 5) * 1000, 0.3f); b->keepPosition = (n & 1);
