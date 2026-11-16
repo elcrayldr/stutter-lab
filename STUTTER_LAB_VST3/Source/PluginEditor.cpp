@@ -351,12 +351,12 @@ void StutterLabAudioProcessorEditor::timerCallback()
         for (int i = 0; i < bins; ++i) { capturePeaks[(size_t) i * 2] = mn[(size_t) i]; capturePeaks[(size_t) i * 2 + 1] = mx[(size_t) i]; }
         lastCaptureSamples = samples; lastW = captureArea.getWidth();
     }
-    if (processor.getRenderId() != shownRenderId && processor.hasRender())
+    const uint64_t currentRenderId = processor.getRenderId();
+    if (currentRenderId != shownRenderId)
     {
-        renderPeaks = processor.getRenderInfo().peaks;
-        shownRenderId = processor.getRenderId();
+        renderPeaks = processor.hasRender() ? processor.getRenderInfo().peaks : std::vector<float>{};
+        shownRenderId = currentRenderId;
     }
-    if (processor.getRenderState() == StutterLabAudioProcessor::RenderState::Idle && ! processor.hasRender() && shownRenderId == 0) renderPeaks.clear();
     stopButton.setButtonText (processor.getRenderState() == StutterLabAudioProcessor::RenderState::Rendering ? "CANCEL" : "STOP");
     previewButton.setButtonText (processor.isPreviewPlaying() ? "STOP PREVIEW" : "PREVIEW");
     previewButton.setEnabled (processor.hasRender());
