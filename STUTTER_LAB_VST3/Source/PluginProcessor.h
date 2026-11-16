@@ -51,7 +51,7 @@ public:
     double getCaptureSampleRate() const { return capture.sampleRate(); }
     double getCaptureSeconds() const { return capture.sampleRate() > 0 ? capture.numSamples() / capture.sampleRate() : 0.0; }
     bool captureHitLimit() const { return capture.hitLimit(); }
-    const cray::CaptureEngine& getCapture() const { return capture; }
+    cray::CaptureEngine& getCapture() { return capture; }
     float getInputPeak() const { return inputPeak.exchange (0.0f); }   // peak since last read (UI meter)
     bool inputClipped() const { return clipFlag.load(); }
     void resetClip() { clipFlag.store (false); }
