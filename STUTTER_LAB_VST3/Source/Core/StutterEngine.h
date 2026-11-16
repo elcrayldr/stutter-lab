@@ -153,6 +153,22 @@ inline StereoBuffer renderStutter (const StereoBuffer& sel, const RenderSettings
     }
     if (progress) progress->store (0.86f, std::memory_order_release);
 
+    // Extend the render before time-based effects so delay/reverb decays are not cut at the phrase boundary.
+    size_t effectTailSamples = 0;
+    if (rs.delayMix > 0.001f)
+    {
+        const double delaySamples = std::max (1.0, std::min (1.2 * sel.sampleRate,
+            divisionSamples (rs.delayDivision, rs.bpm, sel.sampleRate)));
+        const double fb = std::max (0.0, std::min (0.85, (double) rs.delayFeedback));
+        const double repeatsToSilence = fb > 0.001 ? std::ceil (std::log (0.001) / std::log (fb)) : 1.0;
+        effectTailSamples = std::max (effectTailSamples,
+            (size_t) std::min (6.0 * sel.sampleRate, delaySamples * std::max (1.0, repeatsToSilence)));
+    }
+    if (rs.reverbMix > 0.001f)
+        effectTailSamples = std::max (effectTailSamples, (size_t) (sel.sampleRate * (2.0 + 3.0 * std::max (0.0f, std::min (1.0f, rs.reverbSize)))));
+    if (effectTailSamples > 0)
+        out.resize (out.size() + effectTailSamples);
+
     // Stereo feedback delay with cross-channel regeneration (ping-pong topology).
     if (rs.delayMix > 0.001f)
     {
@@ -219,6 +235,16 @@ inline StereoBuffer renderStutter (const StereoBuffer& sel, const RenderSettings
         const float safetyGain = (float) (0.98 / renderPeak);
         for (float& v : out.l) v *= safetyGain;
         for (float& v : out.r) v *= safetyGain;
+    }
+
+    // A short final fade prevents a hard cut if the safety tail reaches its bounded limit.
+    const size_t tailFade = std::min (out.size(), (size_t) std::max (1.0, 0.010 * sel.sampleRate));
+    for (size_t i = 0; i < tailFade; ++i)
+    {
+        const float g = (float) std::cos (0.5 * kPi * ((double) i + 0.5) / (double) tailFade);
+        const size_t at = out.size() - tailFade + i;
+        out.l[at] *= g;
+        out.r[at] *= g;
     }
 
     if (progress) progress->store (0.95f, std::memory_order_release);
