@@ -129,8 +129,8 @@ void StutterLabAudioProcessorEditor::addLabelled (juce::Slider& s, juce::Label& 
 void StutterLabAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced (18);
-    area.removeFromTop (54);
-    auto toolbar = area.removeFromTop (42).reduced (2, 3);
+    area.removeFromTop (52);
+    auto toolbar = area.removeFromTop (38).reduced (2, 3);
     captureButton.setBounds (toolbar.removeFromLeft (112));
     stopButton.setBounds (toolbar.removeFromLeft (76).reduced (3, 0));
     clearButton.setBounds (toolbar.removeFromLeft (70).reduced (3, 0));
@@ -143,16 +143,14 @@ void StutterLabAudioProcessorEditor::resized()
     loadPresetButton.setBounds (toolbar.removeFromLeft (48).reduced (2, 0));
     statusLabel.setBounds (toolbar.reduced (8, 0));
 
+    area.removeFromTop (6);
+    captureArea = area.removeFromTop (130);
     area.removeFromTop (8);
-    captureArea = area.removeFromTop (142);
-    area.removeFromTop (10);
-
-    auto controls = area.removeFromTop (164).reduced (8, 6);
+    auto controls = area.removeFromTop (148).reduced (8, 4);
     const int cw = controls.getWidth() / 4;
     auto c1 = controls.removeFromLeft (cw).reduced (8, 0);
     auto c2 = controls.removeFromLeft (cw).reduced (8, 0);
     auto c3 = controls.removeFromLeft (cw).reduced (8, 0);
-    auto c4 = controls.reduced (8, 0);
     auto row = [] (juce::Rectangle<int>& col, juce::Label& label, juce::Component& component, int labelWidth = 82)
     {
         auto line = col.removeFromTop (28);
@@ -162,22 +160,22 @@ void StutterLabAudioProcessorEditor::resized()
     row (c1, repeatsLabel, repeatsSlider);
     row (c1, divisionLabel, divisionBox);
     row (c1, directionLabel, directionBox);
-    scanButton.setBounds (c1.removeFromTop (30).reduced (2, 4));
-    newSeedButton.setBounds (c1.removeFromTop (28).reduced (2, 3));
+    scanButton.setBounds (c1.removeFromTop (24).reduced (2, 2));
+    newSeedButton.setBounds (c1.removeFromTop (24).reduced (2, 2));
     row (c2, swingLabel, swingSlider);
     row (c2, gateLabel, gateSlider);
     row (c2, humanizeLabel, humanizeSlider);
     row (c2, bpmLabel, bpmSlider);
     row (c3, driveLabel, driveSlider);
-    phoneButton.setBounds (c3.removeFromTop (32).reduced (2, 4));
-    loopButton.setBounds (c3.removeFromTop (32).reduced (2, 4));
+    phoneButton.setBounds (c3.removeFromTop (28).reduced (2, 2));
+    loopButton.setBounds (c3.removeFromTop (28).reduced (2, 2));
 
-    area.removeFromTop (8);
-    renderArea = area.removeFromTop (132);
-    area.removeFromTop (8);
-    effectsArea = area.removeFromTop (112);
-    area.removeFromTop (8);
-    auto bottom = area.removeFromTop (42).reduced (2, 3);
+    area.removeFromTop (6);
+    renderArea = area.removeFromTop (120);
+    area.removeFromTop (6);
+    effectsArea = area.removeFromTop (96);
+    area.removeFromTop (6);
+    auto bottom = area.removeFromTop (40).reduced (2, 3);
     generateButton.setBounds (bottom.removeFromLeft (142));
     previewButton.setBounds (bottom.removeFromLeft (142).reduced (4, 0));
     exportButton.setBounds (bottom.removeFromRight (142));
@@ -191,7 +189,7 @@ void StutterLabAudioProcessorEditor::resized()
     auto fx3 = fx.reduced (6, 0);
     auto fxRow = [] (juce::Rectangle<int>& col, juce::Label& label, juce::Slider& slider)
     {
-        auto line = col.removeFromTop (34);
+        auto line = col.removeFromTop (30);
         label.setBounds (line.removeFromLeft (84));
         slider.setBounds (line.reduced (2, 3));
     };
