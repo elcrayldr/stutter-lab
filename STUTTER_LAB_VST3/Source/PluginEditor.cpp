@@ -86,6 +86,38 @@ StutterLabAudioProcessorEditor::StutterLabAudioProcessorEditor (StutterLabAudioP
     for (auto* c : std::initializer_list<juce::Component*> { &captureButton, &stopButton, &clearButton, &generateButton, &previewButton, &exportButton,
                                                              &phoneButton, &scanButton, &loopButton, &divisionBox, &directionBox, &newSeedButton, &statusLabel, &infoLabel, &delayRateBox, &presetBox, &storeAButton, &storeBButton, &abButton, &undoButton, &savePresetButton, &loadPresetButton, &pitchSlider, &formantSlider, &delayMixSlider, &delayFeedbackSlider, &reverbMixSlider, &reverbSizeSlider })
         addAndMakeVisible (*c);
+    for (auto* slider : { &repeatsSlider, &swingSlider, &gateSlider, &humanizeSlider, &driveSlider, &bpmSlider,
+                          &pitchSlider, &formantSlider, &delayMixSlider, &delayFeedbackSlider, &reverbMixSlider, &reverbSizeSlider })
+    {
+        slider->setColour (juce::Slider::trackColourId, kGold.withAlpha (0.65f));
+        slider->setColour (juce::Slider::thumbColourId, kGold);
+        slider->setColour (juce::Slider::textBoxTextColourId, kIvory);
+        slider->setColour (juce::Slider::textBoxBackgroundColourId, kWell);
+        slider->setColour (juce::Slider::textBoxOutlineColourId, kBrass);
+    }
+    for (auto* combo : { &divisionBox, &directionBox, &delayRateBox, &presetBox })
+    {
+        combo->setColour (juce::ComboBox::backgroundColourId, kWell);
+        combo->setColour (juce::ComboBox::textColourId, kIvory);
+        combo->setColour (juce::ComboBox::outlineColourId, kBrass);
+        combo->setColour (juce::ComboBox::arrowColourId, kGold);
+    }
+    for (auto* button : { &captureButton, &stopButton, &clearButton, &generateButton, &previewButton, &exportButton,
+                          &newSeedButton, &storeAButton, &storeBButton, &abButton, &undoButton, &savePresetButton, &loadPresetButton })
+    {
+        button->setColour (juce::TextButton::buttonColourId, kPanel);
+        button->setColour (juce::TextButton::buttonOnColourId, kOlive);
+        button->setColour (juce::TextButton::textColourOffId, kIvory);
+        button->setColour (juce::TextButton::textColourOnId, kGold);
+    }
+    for (auto* toggle : { &phoneButton, &scanButton, &loopButton })
+    {
+        toggle->setColour (juce::ToggleButton::textColourId, kDim);
+        toggle->setColour (juce::ToggleButton::tickColourId, kGold);
+        toggle->setColour (juce::ToggleButton::tickDisabledColourId, kBrass);
+    }
+    pitchLabel.setTooltip ("Experimental phase-vocoder pitch shifting. Extreme values may smear transients.");
+    formantLabel.setTooltip ("Experimental spectral-envelope shift. Use small moves and audition against the dry render.");
     captureButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff24445a));
     generateButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff17627d));
     statusLabel.setColour (juce::Label::textColourId, kIvory);
@@ -146,7 +178,8 @@ void StutterLabAudioProcessorEditor::resized()
     area.removeFromTop (6);
     captureArea = area.removeFromTop (148);
     area.removeFromTop (8);
-    auto controls = area.removeFromTop (156).reduced (8, 4);
+    controlsArea = area.removeFromTop (156);
+    auto controls = controlsArea.reduced (8, 18);
     const int cw = controls.getWidth() / 3;
     auto c1 = controls.removeFromLeft (cw).reduced (8, 0);
     auto c2 = controls.removeFromLeft (cw).reduced (8, 0);
@@ -173,7 +206,7 @@ void StutterLabAudioProcessorEditor::resized()
     area.removeFromTop (6);
     renderArea = area.removeFromTop (138);
     area.removeFromTop (6);
-    effectsArea = area.removeFromTop (98);
+    effectsArea = area.removeFromTop (112);
     area.removeFromTop (6);
     auto bottom = area.removeFromTop (42).reduced (2, 3);
     generateButton.setBounds (bottom.removeFromLeft (142));
@@ -183,6 +216,7 @@ void StutterLabAudioProcessorEditor::resized()
     infoLabel.setBounds (bottom.reduced (8, 0));
 
     auto fx = effectsArea.reduced (8, 2);
+    fx.removeFromTop (16);
     const int fxCol = fx.getWidth() / 3;
     auto fx1 = fx.removeFromLeft (fxCol).reduced (6, 0);
     auto fx2 = fx.removeFromLeft (fxCol).reduced (6, 0);
@@ -240,6 +274,15 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
     g.setColour (kBrass); g.drawRoundedRectangle (meter, 2.0f, 1.0f);
     g.setColour (processor.inputClipped() ? kRed : kOlive.brighter (0.5f));
     g.fillEllipse ((float) getWidth() - 28.0f, 22.0f, 8.0f, 8.0f);
+
+    // Section panels and hierarchy.
+    g.setColour (kWell.withAlpha (0.72f)); g.fillRoundedRectangle (controlsArea.toFloat(), 7.0f);
+    g.setColour (kBrass.withAlpha (0.7f)); g.drawRoundedRectangle (controlsArea.toFloat(), 7.0f, 1.0f);
+    g.setColour (kDim); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+    g.drawText ("02  /  RHYTHM ENGINE", controlsArea.getX() + 12, controlsArea.getY() + 4, 220, 12, juce::Justification::centredLeft);
+    g.setColour (kWell.withAlpha (0.72f)); g.fillRoundedRectangle (effectsArea.toFloat(), 7.0f);
+    g.setColour (kBrass.withAlpha (0.7f)); g.drawRoundedRectangle (effectsArea.toFloat(), 7.0f, 1.0f);
+    g.setColour (kDim); g.drawText ("04  /  TONE & SPACE  -  PITCH / FORMANT ARE EXPERIMENTAL", effectsArea.getX() + 12, effectsArea.getY() + 4, 460, 12, juce::Justification::centredLeft);
 
     // source waveform
     g.setColour (kGold); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
