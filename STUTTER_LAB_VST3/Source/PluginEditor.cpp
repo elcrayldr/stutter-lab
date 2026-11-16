@@ -144,10 +144,10 @@ void StutterLabAudioProcessorEditor::resized()
     statusLabel.setBounds (toolbar.reduced (8, 0));
 
     area.removeFromTop (6);
-    captureArea = area.removeFromTop (130);
+    captureArea = area.removeFromTop (148);
     area.removeFromTop (8);
-    auto controls = area.removeFromTop (148).reduced (8, 4);
-    const int cw = controls.getWidth() / 4;
+    auto controls = area.removeFromTop (156).reduced (8, 4);
+    const int cw = controls.getWidth() / 3;
     auto c1 = controls.removeFromLeft (cw).reduced (8, 0);
     auto c2 = controls.removeFromLeft (cw).reduced (8, 0);
     auto c3 = controls.removeFromLeft (cw).reduced (8, 0);
@@ -171,11 +171,11 @@ void StutterLabAudioProcessorEditor::resized()
     loopButton.setBounds (c3.removeFromTop (28).reduced (2, 2));
 
     area.removeFromTop (6);
-    renderArea = area.removeFromTop (120);
+    renderArea = area.removeFromTop (138);
     area.removeFromTop (6);
-    effectsArea = area.removeFromTop (96);
+    effectsArea = area.removeFromTop (98);
     area.removeFromTop (6);
-    auto bottom = area.removeFromTop (40).reduced (2, 3);
+    auto bottom = area.removeFromTop (42).reduced (2, 3);
     generateButton.setBounds (bottom.removeFromLeft (142));
     previewButton.setBounds (bottom.removeFromLeft (142).reduced (4, 0));
     exportButton.setBounds (bottom.removeFromRight (142));
@@ -274,8 +274,6 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
         g.setColour (kWell); g.fillRect (bar);
         g.setColour (kGold); g.fillRect (bar.withWidth ((int) std::round (bar.getWidth() * processor.getRenderProgress())));
     }
-    g.setColour (kDim);
-    g.drawText ("03  /  RENDER OUTPUT", renderArea.getX() + 6, renderArea.getY() + 2, 190, 12, juce::Justification::centredLeft);
     if (renderPeaks.empty())
     {
         g.setFont (juce::Font (juce::FontOptions (13.0f)));
