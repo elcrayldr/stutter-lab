@@ -9,6 +9,9 @@ This document distinguishes completed source work from tests that require the Wi
 - [x] Full selection snapshot and deterministic stutter renderer.
 - [x] Background render worker, cooperative cancellation and progress reporting.
 - [x] Unique 24-bit WAV render and preview hand-off.
+- [x] Preview uses the same rendered samples as WAV export after its 4 ms click-protection ramp.
+- [x] Delay and reverb tail extension preserves the rendered phrase rather than clearing it.
+- [x] Capture waveform reads are serialized against the audio callback without adding a mutex to the realtime path.
 - [x] Tempo-synchronised rhythmic divisions including dotted and triplet values.
 - [x] Phase-vocoder pitch shift and independent spectral-envelope/formant shift.
 - [x] Tempo-synchronised ping-pong delay, comb reverb, phone filter and saturation.
@@ -34,7 +37,8 @@ This document distinguishes completed source work from tests that require the Wi
 - [ ] Verify automation playback/write/read for every APVTS parameter.
 - [ ] Verify A/B, Undo, factory/user presets, editor close/reopen and preset versioning.
 - [ ] Verify 44.1, 48, 88.2, 96 and 192 kHz; mono/stereo; low and high buffer sizes.
-- [ ] Stress-test large captures and render cancellation during pitch/formant, delay and reverb processing.
+- [ ] Stress-test large captures and render cancellation during pitch/formant, delay and reverb processing in FL Studio 26 and Cubase 13.
+- [ ] Listen to pitch/formant at multiple intervals and confirm whether the experimental spectral implementation is suitable for release.
 - [ ] Confirm JUCE licence tier and all third-party licence obligations for the product owner.
 
 A successful core test is not a VST3 build result and is not a DAW compatibility result. Do not mark this plugin “release certified” until every Windows/host item above has been checked.
