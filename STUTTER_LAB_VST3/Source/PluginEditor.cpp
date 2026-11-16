@@ -285,8 +285,6 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
     g.setColour (kDim); g.drawText ("04  /  TONE & SPACE  -  PITCH / FORMANT ARE EXPERIMENTAL", effectsArea.getX() + 12, effectsArea.getY() + 4, 460, 12, juce::Justification::centredLeft);
 
     // source waveform
-    g.setColour (kGold); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
-    g.drawText ("01  /  SOURCE CAPTURE", captureArea.getX() + 7, captureArea.getY() + 2, 160, 12, juce::Justification::centredLeft);
     drawPeaks (g, captureArea, capturePeaks, kGold);
     const int total = processor.getCapturedSamples();
     if (total > 0)
@@ -303,12 +301,10 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
         g.setColour (kDim); g.setFont (juce::Font (juce::FontOptions (13.0f)));
         g.drawText ("Press CAPTURE, play or sing the phrase, then STOP. Drag on the waveform to select.", captureArea, juce::Justification::centred);
     }
-    g.setColour (kDim); g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText ("01  /  SOURCE CAPTURE", captureArea.getX() + 6, captureArea.getY() + 2, 190, 12, juce::Justification::centredLeft);
+    g.setColour (kGold); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+    g.drawText ("01  /  SOURCE CAPTURE", captureArea.getX() + 7, captureArea.getY() + 2, 190, 12, juce::Justification::centredLeft);
 
     // render waveform
-    g.setColour (kGold); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
-    g.drawText ("03  /  RENDER OUTPUT", renderArea.getX() + 7, renderArea.getY() + 2, 200, 12, juce::Justification::centredLeft);
     drawPeaks (g, renderArea, renderPeaks, kIvory);
     if (processor.getRenderState() == StutterLabAudioProcessor::RenderState::Rendering)
     {
@@ -317,6 +313,8 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
         g.setColour (kWell); g.fillRect (bar);
         g.setColour (kGold); g.fillRect (bar.withWidth ((int) std::round (bar.getWidth() * processor.getRenderProgress())));
     }
+    g.setColour (kGold); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+    g.drawText ("03  /  RENDER OUTPUT", renderArea.getX() + 7, renderArea.getY() + 2, 200, 12, juce::Justification::centredLeft);
     if (renderPeaks.empty())
     {
         g.setFont (juce::Font (juce::FontOptions (13.0f)));
