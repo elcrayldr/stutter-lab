@@ -65,7 +65,7 @@ public:
     std::atomic<int> repeats { 4 };
     std::atomic<int> division { 2 };                 // index into cray::kDivisionBeats
     std::atomic<int> direction { 0 };                // cray::Direction
-    std::atomic<bool> scanSelection { true };
+    std::atomic<bool> scanSelection { false };
     std::atomic<float> swing { 0.0f }, gate { 1.0f }, humanize { 0.0f };
     std::atomic<float> saturation { 0.0f };
     std::atomic<float> pitchSemitones { 0.0f }, formantSemitones { 0.0f };
