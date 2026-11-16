@@ -18,7 +18,7 @@ public:
     void storeAB (bool storeB);
     void toggleAB();
     bool undoParameterChange();
-    bool saveUserPreset (const juce::File&, juce::String& error) const;
+    bool saveUserPreset (const juce::File&, juce::String& error);
     bool loadUserPreset (const juce::File&, juce::String& error);
     ~StutterLabAudioProcessor() override;
 

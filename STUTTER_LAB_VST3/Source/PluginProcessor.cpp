@@ -278,7 +278,7 @@ bool StutterLabAudioProcessor::undoParameterChange()
     return true;
 }
 
-bool StutterLabAudioProcessor::saveUserPreset (const juce::File& file, juce::String& error) const
+bool StutterLabAudioProcessor::saveUserPreset (const juce::File& file, juce::String& error)
 {
     auto xml = parameters.copyState().createXml();
     if (xml == nullptr || ! xml->writeTo (file, {})) { error = "Could not save preset file."; return false; }
