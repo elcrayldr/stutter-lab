@@ -262,6 +262,34 @@ static void testPreview()
     std::vector<float> a (256, 0.0f); p.process (a.data(), nullptr, 256);
     CHECK (p.lengthSamples() == 1000 && p.isPlaying());
     p.collectGarbage();
+
+    // The preview must reproduce the generated buffer bit-for-bit after its short safety ramp.
+    PreviewEngine exactPreview;
+    exactPreview.prepare (48000.0);
+    RenderSettings settings;
+    settings.bpm = 120.0;
+    settings.stutter.division = 2; // 1/8 = 12,000 samples at 120 BPM
+    settings.stutter.repeats = 4;
+    settings.stutter.scan = false;
+    const auto rendered = renderStutter (ramp (12000), settings);
+    CHECK (rendered.size() == 48000);
+    auto* renderedBuffer = new PreviewBuffer;
+    renderedBuffer->audio = rendered;
+    exactPreview.submit (renderedBuffer);
+    exactPreview.play (false);
+    std::vector<float> auditionL, auditionR;
+    for (int block = 0; block < 375; ++block)
+    {
+        std::vector<float> a (128, 0.0f), b (128, 0.0f);
+        exactPreview.process (a.data(), b.data(), 128);
+        auditionL.insert (auditionL.end(), a.begin(), a.end());
+        auditionR.insert (auditionR.end(), b.begin(), b.end());
+    }
+    bool identical = auditionL.size() == rendered.size() && auditionR.size() == rendered.size();
+    for (size_t i = 192; identical && i < rendered.size(); ++i)
+        identical = std::fabs (auditionL[i] - rendered.l[i]) < 1.0e-6f
+                 && std::fabs (auditionR[i] - rendered.r[i]) < 1.0e-6f;
+    CHECK (identical);
 }
 
 static void testThreadStress()
