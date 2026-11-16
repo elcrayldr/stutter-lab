@@ -114,7 +114,7 @@ inline StereoBuffer renderStutter (const StereoBuffer& sel, const RenderSettings
             bl[i] = sel.l[k]; br[i] = sel.r[k];
         }
         // PingPong joins reversed/forward slices at identical sample values: skip the fade there.
-        const bool pp = p.direction == Direction::PingPong;
+        const bool pp = p.direction == Direction::PingPong && ! p.scan; // only fixed-source joins share identical edge samples
         const size_t idx = done;
         detail::applyFades (bl, br, contentLen, fade, ! (pp && idx > 0), ! (pp && idx + 1 < slices.size()));
         const size_t at = (size_t) std::llround (s.start);
