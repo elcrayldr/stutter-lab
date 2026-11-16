@@ -159,7 +159,7 @@ private:
     {
         stopReq.store (true, std::memory_order_release);
         startReq.store (false, std::memory_order_release);
-        while (activeCallbacks.load (std::memory_order_acquire) != 0) std::this_thread::yield();
+        while (activeCallbacks.load (std::memory_order_seq_cst) != 0) std::this_thread::yield();
         recording.store (false, std::memory_order_release);
         stopReq.store (false, std::memory_order_release);
     }
