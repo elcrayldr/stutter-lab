@@ -155,6 +155,34 @@ static void testSpectralEffectsAndProgress()
     CHECK (peakOf (ambience) <= 0.981); // effects summing cannot hard-clip the 24-bit export
 }
 
+static void testEffectTails()
+{
+    RenderSettings rs;
+    rs.bpm = 120.0;
+    rs.stutter.division = 2;
+    rs.stutter.repeats = 4;
+    rs.stutter.scan = false;
+    rs.delayDivision = 5;
+    rs.delayMix = 0.5f;
+    rs.delayFeedback = 0.5f;
+    auto delayed = renderStutter (constant (48000, 0.5f), rs);
+    CHECK (delayed.size() > 48000);                                    // delay tail extends beyond the dry phrase
+    bool tailAudible = false;
+    for (size_t i = 48000; i < delayed.size(); ++i)
+        if (std::fabs (delayed.l[i]) > 1.0e-4f) { tailAudible = true; break; }
+    CHECK (tailAudible);
+
+    rs.delayMix = 0.0f;
+    rs.reverbMix = 0.3f;
+    rs.reverbSize = 0.7f;
+    auto reverbed = renderStutter (constant (48000, 0.5f), rs);
+    CHECK (reverbed.size() > 48000);                                   // reverb is not truncated at the phrase end
+    bool reverbTailAudible = false;
+    for (size_t i = 48000; i < reverbed.size(); ++i)
+        if (std::fabs (reverbed.l[i]) > 1.0e-4f) { reverbTailAudible = true; break; }
+    CHECK (reverbTailAudible);
+}
+
 static void testWav()
 {
     auto b = ramp (1000, 48000);
@@ -258,7 +286,7 @@ static void testThreadStress()
 int main()
 {
     testDivisions(); testFullSelection(); testTimingAndGate(); testFadesNoClicks(); testDeterminismAndCancel();
-    testToneStability(); testSpectralEffectsAndProgress(); testWav(); testCapture(); testPreview(); testThreadStress();
+    testToneStability(); testSpectralEffectsAndProgress(); testEffectTails(); testWav(); testCapture(); testPreview(); testThreadStress();
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }
