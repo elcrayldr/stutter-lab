@@ -301,7 +301,7 @@ void StutterLabAudioProcessorEditor::timerCallback()
     wasRecording = rec;
 
     const int samples = processor.getCapturedSamples();
-    if (samples != lastCaptureSamples || captureArea.getWidth() != lastW)
+    if (! rec && (samples != lastCaptureSamples || captureArea.getWidth() != lastW))
     {
         const int bins = juce::jmax (1, captureArea.getWidth());
         std::vector<float> mn ((size_t) bins), mx ((size_t) bins);
