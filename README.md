@@ -33,7 +33,7 @@ The script configures Visual Studio 2022 x64, builds the VST3 and core tests, ru
 
 ## Current validation boundary
 
-The JUCE-free core tests pass with GCC 14.2 and Clang 17 in the development environment. The complete JUCE wrapper still requires a Windows MSVC build, followed by manual tests in FL Studio 26 and Cubase 13. Do not consider the project release-certified until those checks pass. See the final validation status document.
+GitHub Actions builds the Windows x64 VST3 and runs the JUCE-free core tests. A successful build is not a substitute for manual listening and compatibility checks in FL Studio 26 and Cubase 13. See the final validation status document.
 
 ## Licensing
 
