@@ -10,7 +10,7 @@ StutterLabAudioProcessorEditor::StutterLabAudioProcessorEditor (StutterLabAudioP
 {
     setSize (1120, 760);
     setResizable (true, true);
-    setResizeLimits (1000, 700, 1800, 1200);
+    setResizeLimits (1000, 760, 1800, 1200);
 
     for (int i = 0; i < cray::kNumDivisions; ++i) divisionBox.addItem (cray::kDivisionNames[i], i + 1);
     divisionBox.setSelectedId (processor.division.load() + 1, juce::dontSendNotification);
@@ -175,11 +175,19 @@ void StutterLabAudioProcessorEditor::resized()
     loadPresetButton.setBounds (toolbar.removeFromLeft (48).reduced (2, 0));
     statusLabel.setBounds (toolbar.reduced (8, 0));
 
+    // Preserve readable minimums, then distribute extra height to both waveforms.
+    const int extra = juce::jmax (0, area.getHeight() - 634);
+    const int captureHeight = 148 + (int) std::round (extra * 0.30);
+    const int controlsHeight = 156 + (int) std::round (extra * 0.15);
+    const int renderHeight = 138 + (int) std::round (extra * 0.30);
+    const int effectsHeight = 112 + (int) std::round (extra * 0.15);
+
     area.removeFromTop (6);
-    captureArea = area.removeFromTop (148);
+    captureArea = area.removeFromTop (captureHeight);
     area.removeFromTop (8);
-    controlsArea = area.removeFromTop (156);
-    auto controls = controlsArea.reduced (8, 18);
+    controlsArea = area.removeFromTop (controlsHeight);
+    auto controls = controlsArea.reduced (8, 4);
+    controls.removeFromTop (16);
     const int cw = controls.getWidth() / 3;
     auto c1 = controls.removeFromLeft (cw).reduced (8, 0);
     auto c2 = controls.removeFromLeft (cw).reduced (8, 0);
@@ -204,9 +212,9 @@ void StutterLabAudioProcessorEditor::resized()
     loopButton.setBounds (c3.removeFromTop (28).reduced (2, 2));
 
     area.removeFromTop (6);
-    renderArea = area.removeFromTop (138);
+    renderArea = area.removeFromTop (renderHeight);
     area.removeFromTop (6);
-    effectsArea = area.removeFromTop (112);
+    effectsArea = area.removeFromTop (effectsHeight);
     area.removeFromTop (6);
     auto bottom = area.removeFromTop (42).reduced (2, 3);
     generateButton.setBounds (bottom.removeFromLeft (142));
