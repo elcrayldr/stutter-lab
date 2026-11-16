@@ -86,8 +86,8 @@ StutterLabAudioProcessorEditor::StutterLabAudioProcessorEditor (StutterLabAudioP
     for (auto* c : std::initializer_list<juce::Component*> { &captureButton, &stopButton, &clearButton, &generateButton, &previewButton, &exportButton,
                                                              &phoneButton, &scanButton, &loopButton, &divisionBox, &directionBox, &newSeedButton, &statusLabel, &infoLabel, &delayRateBox, &presetBox, &storeAButton, &storeBButton, &abButton, &undoButton, &savePresetButton, &loadPresetButton, &pitchSlider, &formantSlider, &delayMixSlider, &delayFeedbackSlider, &reverbMixSlider, &reverbSizeSlider })
         addAndMakeVisible (*c);
-    captureButton.setColour (juce::TextButton::buttonColourId, kRed.darker (0.3f));
-    generateButton.setColour (juce::TextButton::buttonColourId, kGold.darker (0.5f));
+    captureButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff24445a));
+    generateButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff17627d));
     statusLabel.setColour (juce::Label::textColourId, kIvory);
     infoLabel.setColour (juce::Label::textColourId, kDim);
     infoLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
@@ -155,7 +155,7 @@ void StutterLabAudioProcessorEditor::resized()
     auto c4 = controls.reduced (8, 0);
     auto row = [] (juce::Rectangle<int>& col, juce::Label& label, juce::Component& component, int labelWidth = 82)
     {
-        auto line = col.removeFromTop (34);
+        auto line = col.removeFromTop (28);
         label.setBounds (line.removeFromLeft (labelWidth));
         component.setBounds (line.reduced (2, 4));
     };
@@ -199,7 +199,7 @@ void StutterLabAudioProcessorEditor::resized()
     fxRow (fx1, formantLabel, formantSlider);
     fxRow (fx2, delayMixLabel, delayMixSlider);
     fxRow (fx2, delayFeedbackLabel, delayFeedbackSlider);
-    auto delayRateLine = fx2.removeFromTop (28);
+    auto delayRateLine = fx2.removeFromTop (26);
     delayRateLabel.setBounds (delayRateLine.removeFromLeft (84));
     delayRateBox.setBounds (delayRateLine.reduced (2, 2));
     fxRow (fx3, reverbMixLabel, reverbMixSlider);
@@ -231,7 +231,7 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawText ("STUTTER LAB", 24, 14, 300, 30, juce::Justification::centredLeft);
     g.setColour (kDim); g.setFont (juce::Font (juce::FontOptions (11.0f)));
     g.drawText ("CRAY LDR  /  CAPTURE  -  SHAPE  -  GENERATE  -  AUDITION  -  EXPORT", 24, 38, 520, 14, juce::Justification::centredLeft);
-    g.setColour (kIvory); g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    g.setColour (kIvory); g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));\n    g.setColour (kDim); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));\n    g.drawText ("02  /  RHYTHM ENGINE", 24, captureArea.getBottom() + 8, 220, 14, juce::Justification::centredLeft);\n    g.drawText ("04  /  TONE & SPACE", 24, effectsArea.getY() + 2, 220, 14, juce::Justification::centredLeft);
     g.drawText (juce::String (processor.getEffectiveBpm(), 1) + " BPM" + (processor.hostTempoAvailable() ? "  (HOST)" : "  (MANUAL)"),
                 getWidth() - 300, 18, 180, 22, juce::Justification::centredRight);
     // Small analogue-style input meter and peak LED.
