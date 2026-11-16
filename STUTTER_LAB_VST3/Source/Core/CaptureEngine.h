@@ -19,9 +19,9 @@ public:
         beginExclusive();
         requestStopAndWait();
         StereoBuffer keep;
-        if (const size_t n = (size_t) num.load(); n > 0 && rate > 0.0)
+        if (const size_t n = (size_t) num.load (std::memory_order_acquire); n > 0 && rate.load (std::memory_order_acquire) > 0.0)
         {
-            keep.sampleRate = rate;
+            keep.sampleRate = rate.load (std::memory_order_acquire);
             keep.l.assign (l.begin(), l.begin() + (long) n);
             keep.r.assign (r.begin(), r.begin() + (long) n);
         }
