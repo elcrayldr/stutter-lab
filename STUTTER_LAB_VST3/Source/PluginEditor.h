@@ -26,7 +26,7 @@ private:
     StutterLabAudioProcessor& processor;
     juce::TextButton captureButton { "CAPTURE" }, stopButton { "STOP" }, clearButton { "CLEAR" },
                      generateButton { "GENERATE" }, previewButton { "PREVIEW" }, exportButton { "EXPORT WAV" };
-    juce::ToggleButton phoneButton { "PHONE" }, scanButton { "SCAN SELECTION" }, loopButton { "LOOP PREVIEW" };
+    juce::ToggleButton phoneButton { "PHONE" }, scanButton { "SCAN SOURCE" }, loopButton { "LOOP PREVIEW" };
     juce::ComboBox divisionBox, directionBox, delayRateBox;
     juce::Slider repeatsSlider, swingSlider, gateSlider, humanizeSlider, driveSlider, bpmSlider;
     juce::Slider pitchSlider, formantSlider, delayMixSlider, delayFeedbackSlider, reverbMixSlider, reverbSizeSlider;
