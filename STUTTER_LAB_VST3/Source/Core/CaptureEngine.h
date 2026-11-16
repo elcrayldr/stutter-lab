@@ -4,6 +4,7 @@
 #pragma once
 #include <chrono>
 #include <thread>
+#include <mutex>
 #include "Common.h"
 
 namespace cray
@@ -14,7 +15,8 @@ public:
     // Non-realtime. Allocates. Handles sample-rate changes by resampling any existing take.
     void prepare (double sr, double maxSeconds)
     {
-        exclusive.store (true);
+        std::lock_guard<std::mutex> guard (controlMutex);
+        beginExclusive();
         requestStopAndWait();
         StereoBuffer keep;
         if (const size_t n = (size_t) num.load(); n > 0 && rate > 0.0)
@@ -24,13 +26,13 @@ public:
             keep.r.assign (r.begin(), r.begin() + (long) n);
         }
         if (! pending.empty() && keep.empty()) { keep = std::move (pending); pending = {}; }
-        rate = sr;
+        rate.store (sr, std::memory_order_release);
         const size_t cap = (size_t) std::max (1.0, std::ceil (sr * maxSeconds));
         l.assign (cap, 0.0f); r.assign (cap, 0.0f);
-        capacity = cap;
+        capacity.store (cap, std::memory_order_release);
         num.store (0);
         if (! keep.empty()) copyIn (resampleBuffer (keep, sr));
-        exclusive.store (false);
+        endExclusive();
     }
 
     // Any thread
@@ -38,47 +40,64 @@ public:
     void requestStop() noexcept  { stopReq.store (true, std::memory_order_release); startReq.store (false); }
     bool isRecording() const noexcept { return recording.load (std::memory_order_acquire); }
     int  numSamples() const noexcept  { return num.load (std::memory_order_acquire); }
-    double sampleRate() const noexcept { return rate; }
-    size_t getCapacity() const noexcept { return capacity; }
+    double sampleRate() const noexcept { return rate.load (std::memory_order_acquire); }
+    size_t getCapacity() const noexcept { return capacity.load (std::memory_order_acquire); }
     bool hitLimit() const noexcept { return limitHit.load(); }
 
     // Realtime. r may be nullptr (mono bus) -> dual mono.
+    // The active-callback counter lets non-realtime readers pause capture safely
+    // without ever making the audio thread wait on a mutex.
     void process (const float* inL, const float* inR, int n) noexcept
     {
-        inProcess.store (true, std::memory_order_release);
-        if (stopReq.exchange (false)) recording.store (false, std::memory_order_release);
-        if (startReq.load (std::memory_order_acquire) && ! exclusive.load (std::memory_order_acquire))
+        activeCallbacks.fetch_add (1, std::memory_order_acq_rel);
+        if (! exclusive.load (std::memory_order_acquire))
         {
-            startReq.store (false);
-            if (capacity > 0) { num.store (0, std::memory_order_release); limitHit.store (false); recording.store (true, std::memory_order_release); }
+            if (stopReq.exchange (false, std::memory_order_acq_rel))
+                recording.store (false, std::memory_order_release);
+            if (startReq.exchange (false, std::memory_order_acq_rel) && capacity.load (std::memory_order_acquire) > 0)
+            {
+                num.store (0, std::memory_order_release);
+                limitHit.store (false, std::memory_order_release);
+                recording.store (true, std::memory_order_release);
+            }
+            if (recording.load (std::memory_order_acquire) && inL != nullptr)
+            {
+                const size_t at = (size_t) num.load (std::memory_order_relaxed);
+                const size_t cap = capacity.load (std::memory_order_acquire);
+                const size_t room = cap > at ? cap - at : 0;
+                const size_t k = std::min ((size_t) n, room);
+                for (size_t i = 0; i < k; ++i)
+                {
+                    l[at + i] = inL[i];
+                    r[at + i] = inR ? inR[i] : inL[i];
+                }
+                num.store ((int) (at + k), std::memory_order_release);
+                if (k < (size_t) n)
+                {
+                    recording.store (false, std::memory_order_release);
+                    limitHit.store (true, std::memory_order_release);
+                }
+            }
         }
-        if (recording.load (std::memory_order_acquire) && inL != nullptr)
-        {
-            const size_t at = (size_t) num.load (std::memory_order_relaxed);
-            const size_t room = capacity > at ? capacity - at : 0;
-            const size_t k = std::min ((size_t) n, room);
-            for (size_t i = 0; i < k; ++i) { l[at + i] = inL[i]; r[at + i] = inR ? inR[i] : inL[i]; }
-            num.store ((int) (at + k), std::memory_order_release);
-            if (k < (size_t) n) { recording.store (false, std::memory_order_release); limitHit.store (true); }
-        }
-        inProcess.store (false, std::memory_order_release);
+        activeCallbacks.fetch_sub (1, std::memory_order_release);
     }
 
     // Non-realtime
     void clear()
     {
-        requestStop();
-        exclusive.store (true); requestStopAndWait();
-        num.store (0); pending = {};
-        exclusive.store (false);
+        std::lock_guard<std::mutex> guard (controlMutex);
+        beginExclusive(); requestStopAndWait();
+        num.store (0, std::memory_order_release); pending = {};
+        endExclusive();
     }
 
     // Copies [start,end) into dst. Fails while a take is recording.
     bool snapshot (StereoBuffer& dst, size_t start, size_t end)
     {
-        exclusive.store (true);
+        std::lock_guard<std::mutex> guard (controlMutex);
+        beginExclusive();
         requestStopAndWait();
-        const size_t total = (size_t) num.load();
+        const size_t total = (size_t) num.load (std::memory_order_acquire);
         end = std::min (end, total);
         bool ok = false;
         if (start < end)
@@ -88,7 +107,7 @@ public:
             dst.r.assign (r.begin() + (long) start, r.begin() + (long) end);
             ok = true;
         }
-        exclusive.store (false);
+        endExclusive();
         return ok;
     }
     bool snapshotAll (StereoBuffer& dst) { return snapshot (dst, 0, (size_t) numSamples()); }
@@ -96,20 +115,23 @@ public:
     // Replace contents (state recall). If not yet prepared the take is held until prepare().
     void load (const StereoBuffer& src)
     {
-        if (capacity == 0) { pending = src; return; }
-        exclusive.store (true); requestStopAndWait();
-        num.store (0);
-        copyIn (resampleBuffer (src, rate));
-        exclusive.store (false);
+        std::lock_guard<std::mutex> guard (controlMutex);
+        if (capacity.load (std::memory_order_acquire) == 0) { pending = src; return; }
+        beginExclusive(); requestStopAndWait();
+        num.store (0, std::memory_order_release);
+        copyIn (resampleBuffer (src, rate.load (std::memory_order_acquire)));
+        endExclusive();
     }
 
     // Min/max per bin over [start,end). Safe on the UI thread: only reads already-published samples.
-    void peaks (size_t start, size_t end, int bins, float* mn, float* mx) const
+    void peaks (size_t start, size_t end, int bins, float* mn, float* mx)
     {
+        std::lock_guard<std::mutex> guard (controlMutex);
+        beginExclusive();
         const size_t total = (size_t) num.load (std::memory_order_acquire);
         end = std::min (end, total);
         for (int b = 0; b < bins; ++b) { mn[b] = 0.0f; mx[b] = 0.0f; }
-        if (start >= end || bins <= 0) return;
+        if (start >= end || bins <= 0) { endExclusive(); return; }
         const double span = (double) (end - start);
         for (int b = 0; b < bins; ++b)
         {
@@ -123,22 +145,27 @@ public:
             }
             mn[b] = lo; mx[b] = hi;
         }
+        endExclusive();
     }
 
 private:
+    void beginExclusive()
+    {
+        exclusive.store (true, std::memory_order_release);
+        while (activeCallbacks.load (std::memory_order_acquire) != 0) std::this_thread::yield();
+    }
+    void endExclusive() noexcept { exclusive.store (false, std::memory_order_release); }
     void requestStopAndWait()
     {
         stopReq.store (true, std::memory_order_release);
-        // This runs only on a non-realtime thread. Wait for the current callback
-        // block to leave before reading/resizing the backing vectors; never race a
-        // timed-out snapshot against a still-running audio callback.
-        while (inProcess.load (std::memory_order_acquire)) std::this_thread::yield();
+        startReq.store (false, std::memory_order_release);
+        while (activeCallbacks.load (std::memory_order_acquire) != 0) std::this_thread::yield();
         recording.store (false, std::memory_order_release);
         stopReq.store (false, std::memory_order_release);
     }
     void copyIn (const StereoBuffer& b)
     {
-        const size_t k = std::min (b.size(), capacity);
+        const size_t k = std::min (b.size(), capacity.load (std::memory_order_acquire));
         std::copy (b.l.begin(), b.l.begin() + (long) k, l.begin());
         std::copy (b.r.begin(), b.r.begin() + (long) k, r.begin());
         num.store ((int) k, std::memory_order_release);
@@ -146,10 +173,12 @@ private:
 
     std::vector<float> l, r;
     StereoBuffer pending;
-    size_t capacity = 0;
-    double rate = 44100.0;
+    std::atomic<size_t> capacity { 0 };
+    std::atomic<double> rate { 44100.0 };
+    std::atomic<uint32_t> activeCallbacks { 0 };
+    std::mutex controlMutex;
     std::atomic<int> num { 0 };
     std::atomic<bool> recording { false }, startReq { false }, stopReq { false };
-    std::atomic<bool> exclusive { false }, inProcess { false }, limitHit { false };
+    std::atomic<bool> exclusive { false }, limitHit { false };
 };
 } // namespace cray
