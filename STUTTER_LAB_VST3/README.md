@@ -13,7 +13,9 @@ Capture-based vocal stutter, pitch/formant and ambience processor. Windows x64 V
 - Processes the full selected region using repeat scanning, rhythmic divisions, reverse, ping-pong, seeded random direction, swing, gate and humanize.
 - Offline pitch shift and independent spectral-envelope/formant shift.
 - Tempo-synchronised stereo ping-pong delay, comb reverb, phone filtering and drive saturation.
-- Preview is streamed through a lock-free hand-off to the audio callback and crossfades with the live input.
+- Preview and WAV export use the same completed render buffer. Preview uses a 4 ms transition ramp to avoid clicks, then reproduces the render samples without additional DSP.
+- The editor uses a source waveform, a separate render waveform, a dedicated rhythm panel and a tone/space panel. Capture waveform analysis runs after capture stops so it cannot steal blocks from an active take.
+- Pitch/formant remain optional experimental spectral tools; they are not enabled in the default or reverse factory preset.
 - Generates unique 24-bit PCM WAV files, supports external file drag-out and Save As export.
 - Host-automatable parameters through `AudioProcessorValueTreeState`.
 - Five factory presets, user preset save/load, A/B snapshots and Undo.
@@ -53,7 +55,7 @@ cmake --build build-core --parallel
 ctest --test-dir build-core --output-on-failure
 ```
 
-The test suite covers rhythmic divisions, full-selection scanning, gate/swing, fades, deterministic randomisation, cancellation, pitch/formant processing, delay/reverb stability, WAV encoding, capture persistence primitives, preview hand-off and concurrent capture/preview stress.
+The test suite covers rhythmic divisions, full-selection scanning, gate/swing, fades, deterministic randomisation, cancellation, pitch/formant processing, delay/reverb tails, WAV encoding, capture persistence primitives, exact preview/render sample equality after the safety ramp, 192 kHz processing and concurrent capture/preview stress.
 
 ## GitHub Actions
 
