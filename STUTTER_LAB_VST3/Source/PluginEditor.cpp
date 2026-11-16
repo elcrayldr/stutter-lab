@@ -346,7 +346,10 @@ void StutterLabAudioProcessorEditor::timerCallback()
     meterPeak = processor.getInputPeak();
     const bool rec = processor.isCapturing();
     if (wasRecording && ! rec)                                          // take just ended: select all of it
+    {
         processor.setSelection (0.0, processor.getCaptureSeconds());
+        lastCaptureSamples = -1;                                        // force a redraw even if the new take has the same length
+    }
     wasRecording = rec;
 
     const int samples = processor.getCapturedSamples();
