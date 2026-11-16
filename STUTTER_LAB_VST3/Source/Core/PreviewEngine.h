@@ -61,7 +61,9 @@ public:
         }
         if (restart.exchange (false)) cursor = 0;
 
-        const bool want = wantPlay.load (std::memory_order_acquire) && current != nullptr && ! current->audio.empty();
+        const bool hasCurrentAudio = current != nullptr && ! current->audio.empty();
+        if (! hasCurrentAudio) wantPlay.store (false, std::memory_order_release);
+        const bool want = wantPlay.load (std::memory_order_acquire) && hasCurrentAudio;
         if (! want && gain <= 0.0f) { audible.store (false, std::memory_order_release); pos.store ((int) cursor, std::memory_order_relaxed); return; }
 
         const auto& a = current->audio;
