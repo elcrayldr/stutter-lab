@@ -153,19 +153,21 @@ inline StereoBuffer renderStutter (const StereoBuffer& sel, const RenderSettings
     }
     if (progress) progress->store (0.86f, std::memory_order_release);
 
-    // Extend the render before time-based effects so delay/reverb decays are not cut at the phrase boundary.
-    size_t effectTailSamples = 0;
+    // Extend the render before time-based effects so combined delay/reverb decays are not cut.
+    size_t delayTailSamples = 0, reverbTailSamples = 0;
     if (rs.delayMix > 0.001f)
     {
         const double delaySamples = std::max (1.0, std::min (1.2 * sel.sampleRate,
             divisionSamples (rs.delayDivision, rs.bpm, sel.sampleRate)));
         const double fb = std::max (0.0, std::min (0.85, (double) rs.delayFeedback));
         const double repeatsToSilence = fb > 0.001 ? std::ceil (std::log (0.001) / std::log (fb)) : 1.0;
-        effectTailSamples = std::max (effectTailSamples,
-            (size_t) std::min (6.0 * sel.sampleRate, delaySamples * std::max (1.0, repeatsToSilence)));
+        delayTailSamples = (size_t) std::min (6.0 * sel.sampleRate,
+            delaySamples * std::max (1.0, repeatsToSilence));
     }
     if (rs.reverbMix > 0.001f)
-        effectTailSamples = std::max (effectTailSamples, (size_t) (sel.sampleRate * (2.0 + 3.0 * std::max (0.0f, std::min (1.0f, rs.reverbSize)))));
+        reverbTailSamples = (size_t) (sel.sampleRate * (2.0 + 3.0 * std::max (0.0f, std::min (1.0f, rs.reverbSize))));
+    const size_t effectTailSamples = (size_t) std::min (6.0 * sel.sampleRate,
+        (double) delayTailSamples + (double) reverbTailSamples);
     if (effectTailSamples > 0)
         out.resize (out.size() + effectTailSamples);
 
