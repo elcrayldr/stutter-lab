@@ -261,7 +261,7 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
         g.drawText ("Press CAPTURE, play or sing the phrase, then STOP. Drag on the waveform to select.", captureArea, juce::Justification::centred);
     }
     g.setColour (kDim); g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText ("SOURCE", captureArea.getX() + 6, captureArea.getY() + 2, 80, 12, juce::Justification::centredLeft);
+    g.drawText ("01  /  SOURCE CAPTURE", captureArea.getX() + 6, captureArea.getY() + 2, 190, 12, juce::Justification::centredLeft);
 
     // render waveform
     g.setColour (kGold); g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
@@ -275,7 +275,7 @@ void StutterLabAudioProcessorEditor::paint (juce::Graphics& g)
         g.setColour (kGold); g.fillRect (bar.withWidth ((int) std::round (bar.getWidth() * processor.getRenderProgress())));
     }
     g.setColour (kDim);
-    g.drawText ("RENDER", renderArea.getX() + 6, renderArea.getY() + 2, 80, 12, juce::Justification::centredLeft);
+    g.drawText ("03  /  RENDER OUTPUT", renderArea.getX() + 6, renderArea.getY() + 2, 190, 12, juce::Justification::centredLeft);
     if (renderPeaks.empty())
     {
         g.setFont (juce::Font (juce::FontOptions (13.0f)));
