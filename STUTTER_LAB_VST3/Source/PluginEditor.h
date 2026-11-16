@@ -44,7 +44,7 @@ private:
     std::unique_ptr<ComboAttachment> divisionAttachment, directionAttachment, delayRateAttachment;
     std::unique_ptr<ButtonAttachment> phoneAttachment, scanAttachment, loopAttachment;
 
-    juce::Rectangle<int> captureArea, renderArea, dragArea, effectsArea;
+    juce::Rectangle<int> captureArea, renderArea, dragArea, controlsArea, effectsArea;
     std::vector<float> capturePeaks, renderPeaks;
     int lastCaptureSamples = -1, lastW = 0;
     uint64_t shownRenderId = 0;
