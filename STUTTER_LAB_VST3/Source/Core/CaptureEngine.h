@@ -49,8 +49,8 @@ public:
     // without ever making the audio thread wait on a mutex.
     void process (const float* inL, const float* inR, int n) noexcept
     {
-        activeCallbacks.fetch_add (1, std::memory_order_acq_rel);
-        if (! exclusive.load (std::memory_order_acquire))
+        activeCallbacks.fetch_add (1, std::memory_order_seq_cst);
+        if (! exclusive.load (std::memory_order_seq_cst))
         {
             if (stopReq.exchange (false, std::memory_order_acq_rel))
                 recording.store (false, std::memory_order_release);
@@ -79,7 +79,7 @@ public:
                 }
             }
         }
-        activeCallbacks.fetch_sub (1, std::memory_order_release);
+        activeCallbacks.fetch_sub (1, std::memory_order_seq_cst);
     }
 
     // Non-realtime
@@ -151,10 +151,10 @@ public:
 private:
     void beginExclusive()
     {
-        exclusive.store (true, std::memory_order_release);
-        while (activeCallbacks.load (std::memory_order_acquire) != 0) std::this_thread::yield();
+        exclusive.store (true, std::memory_order_seq_cst);
+        while (activeCallbacks.load (std::memory_order_seq_cst) != 0) std::this_thread::yield();
     }
-    void endExclusive() noexcept { exclusive.store (false, std::memory_order_release); }
+    void endExclusive() noexcept { exclusive.store (false, std::memory_order_seq_cst); }
     void requestStopAndWait()
     {
         stopReq.store (true, std::memory_order_release);
