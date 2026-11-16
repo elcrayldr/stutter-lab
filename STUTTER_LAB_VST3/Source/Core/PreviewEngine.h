@@ -32,7 +32,7 @@ public:
     void play (bool loopIt) { loop.store (loopIt); restart.store (true); wantPlay.store (true, std::memory_order_release); }
     void stop() { wantPlay.store (false, std::memory_order_release); }
     void setLoop (bool v) { loop.store (v); }
-    bool isPlaying() const noexcept { return wantPlay.load() || gain > 0.0f; }
+    bool isPlaying() const noexcept { return wantPlay.load (std::memory_order_acquire) || audible.load (std::memory_order_acquire); }
     bool hasAudio() const noexcept { return length.load() > 0; }
     int  lengthSamples() const noexcept { return length.load(); }
     float progress() const noexcept
@@ -62,7 +62,7 @@ public:
         if (restart.exchange (false)) cursor = 0;
 
         const bool want = wantPlay.load (std::memory_order_acquire) && current != nullptr && ! current->audio.empty();
-        if (! want && gain <= 0.0f) { pos.store ((int) cursor, std::memory_order_relaxed); return; }
+        if (! want && gain <= 0.0f) { audible.store (false, std::memory_order_release); pos.store ((int) cursor, std::memory_order_relaxed); return; }
 
         const auto& a = current->audio;
         const long total = (long) a.size();
@@ -88,6 +88,7 @@ public:
                 l[i] = l[i] * (1.0f - gain) + 0.5f * (pl + pr) * gain;
             if (playing) ++cursor;
         }
+        audible.store (gain > 0.0f, std::memory_order_release);
         pos.store ((int) std::min<long> (cursor, total), std::memory_order_relaxed);
     }
 
@@ -100,7 +101,7 @@ private:
     float gain = 0.0f;                           // audio thread only
     float slewPerSample = 0.01f;
     double sampleRate = 44100.0;
-    std::atomic<bool> wantPlay { false }, loop { false }, restart { false };
+    std::atomic<bool> wantPlay { false }, loop { false }, restart { false }, audible { false };
     std::atomic<int> length { 0 }, pos { 0 };
 };
 } // namespace cray
