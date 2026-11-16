@@ -74,6 +74,13 @@ static void testFadesNoClicks()
     rs.stutter.direction = Direction::PingPong; rs.stutter.gate = 1.0f;
     auto pp = renderStutter (ramp (30000), rs);
     for (float v : pp.l) CHECK (std::isfinite (v));
+    // Scanning changes source offsets, so ping-pong joins must fade rather than assume matching edge samples.
+    rs.stutter.scan = true;
+    auto scanned = renderStutter (ramp (30000), rs);
+    float scannedMaxJump = 0.0f;
+    for (size_t i = 1; i < scanned.size(); ++i)
+        scannedMaxJump = std::max (scannedMaxJump, std::fabs (scanned.l[i] - scanned.l[i - 1]));
+    CHECK (scannedMaxJump < 0.08f);
 }
 
 static void testDeterminismAndCancel()
