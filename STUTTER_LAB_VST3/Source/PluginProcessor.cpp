@@ -112,6 +112,12 @@ void StutterLabAudioProcessor::prepareToPlay (double sampleRate, int)
     preview.submit (empty);
     preview.stop();
     preview.collectGarbage();
+    {
+        const juce::ScopedLock sl (infoLock);
+        info = {}; // a render from the previous sample rate is no longer auditionable
+    }
+    renderId.store (0, std::memory_order_release);
+    renderProgress.store (0.0f, std::memory_order_release);
     renderState.store (RenderState::Idle);
     const double duration = getCaptureSeconds();
     if (duration > 0.0)
@@ -139,12 +145,15 @@ void StutterLabAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 {
     juce::ScopedNoDenormals noDenormals;
 
+    bool foundHostTempo = false;
     if (auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())
-        {
-            if (auto bpm = pos->getBpm()) { hostBpm.store ((float) *bpm, std::memory_order_relaxed); hostBpmValid.store (true, std::memory_order_relaxed); }
-            else hostBpmValid.store (false, std::memory_order_relaxed);
-        }
+            if (auto bpm = pos->getBpm())
+            {
+                hostBpm.store ((float) *bpm, std::memory_order_relaxed);
+                foundHostTempo = true;
+            }
+    hostBpmValid.store (foundHostTempo, std::memory_order_relaxed);
 
     syncParametersToAtomics();
     const int n = buffer.getNumSamples();
@@ -230,6 +239,7 @@ void StutterLabAudioProcessor::loadFactoryPreset (int index)
         if (auto* p = parameters.getParameter (id)) p->setValueNotifyingHost (p->convertTo0to1 (value));
     };
     // Presets are intentionally gain-safe and leave the live input path untouched.
+    set ("scan", 0.0f);
     switch (juce::jlimit (0, 4, index))
     {
         case 0: // Init
@@ -331,8 +341,20 @@ bool StutterLabAudioProcessor::generate (juce::String& error)
     s.stutter.seed = (uint32_t) seed.load();
     job.id = nextJobId.fetch_add (1);
 
-    const double estimate = (double) s.stutter.repeats * cray::divisionSamples (s.stutter.division, s.bpm, sr) / sr;
-    if (estimate > 120.0) { error = "Render would exceed 120 s. Reduce repeats or use a shorter division."; return false; }
+    const double stepSamples = cray::divisionSamples (s.stutter.division, s.bpm, sr);
+    double estimate = ((double) s.stutter.repeats + 0.5) * stepSamples / sr; // swing + humanize headroom
+    double delayTail = 0.0, reverbTail = 0.0;
+    if (s.delayMix > 0.001f)
+    {
+        const double delaySamples = cray::divisionSamples (s.delayDivision, s.bpm, sr);
+        const double fb = juce::jlimit (0.0, 0.85, (double) s.delayFeedback);
+        const double repeatsToSilence = fb > 0.001 ? std::ceil (std::log (0.001) / std::log (fb)) : 1.0;
+        delayTail = std::min (6.0, delaySamples * std::max (1.0, repeatsToSilence) / sr);
+    }
+    if (s.reverbMix > 0.001f)
+        reverbTail = 2.0 + 3.0 * juce::jlimit (0.0f, 1.0f, s.reverbSize);
+    estimate += std::min (6.0, delayTail + reverbTail);
+    if (estimate > 120.0) { error = "Render including effect tails would exceed 120 s. Reduce repeats, feedback or reverb size."; return false; }
 
     preview.stop();
     renderProgress.store (0.0f, std::memory_order_release);
